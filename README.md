@@ -1,4 +1,4 @@
-# php-built-in-server
+# php-built-in-server extension for vscode
 
 ## Features
 
