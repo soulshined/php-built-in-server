@@ -16,6 +16,14 @@ export default class Utils
         context = v;
     }
 
+    public static get isWindows(): boolean {
+        return process.platform === "win32";
+    }
+
+    public static getCommandForOS(windows: string, other: string) {
+        return Utils.isWindows ? windows : other;
+    }
+
     public static getPhpExecutable(): string | undefined {
         const command = `${process.platform === "win32" ? "where" : "which"} php`;
 

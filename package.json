@@ -3,7 +3,7 @@
     "displayName": "PHP Built In Server",
     "publisher": "davidfreer",
     "description": "An extension that streamlines running the php built in server complete with hot reloading",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "engines": {
         "vscode": "^1.72.0"
     },
@@ -44,13 +44,25 @@
         ],
         "configuration": {
             "properties": {
-                "php-built-in-server.isHeadless": {
-                    "type": "boolean",
-                    "description": "Run the server without opening a browser tab to instance"
-                },
                 "php-built-in-server.server": {
                     "type": "object",
+                    "additionalProperties": false,
                     "properties": {
+                        "headless": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean",
+                                    "description": "Run the without opening a browser tab to a server instance and executes the root file directly on each save",
+                                    "default": false
+                                },
+                                "clearTerminalOnSave": {
+                                    "type": "boolean",
+                                    "default": true
+                                }
+                            }
+                        },
                         "port": {
                             "type": "integer",
                             "minimum": 3000

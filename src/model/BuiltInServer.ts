@@ -152,10 +152,9 @@ export class PHPBuiltInServer  {
             })
         } else this.socketIsActive = false;
 
-        if (this.terminal)
-            this.terminal.dispose();
-
+        this.terminal?.dispose();
         this.fsw.dispose();
+        this.emitter.emit('close');
     }
 
     public onClose(callback: Function) {
@@ -165,6 +164,12 @@ export class PHPBuiltInServer  {
     }
 
     public start(): Promise<PHPBuiltInServerInstanceData> {
+        if (!Configurations.serverRoot.endsWith(".php")) {
+            // @ts-ignore
+            this.errors.push(`${PHPBuiltInServerErrorReason.CREATING_PHP_ROUTER} directory. The provided root file '${Configurations.serverRoot}' is not a php file`);
+            return Promise.reject(this.errors);
+        }
+
         this.applyRouter();
         this.initWebSocket();
         this.initPHPBuiltInServer();
@@ -204,7 +209,7 @@ export class PHPBuiltInServer  {
                 !_path.endsWith("package.json") &&
                 !_path.endsWith("package-lock.json")
             ) {
-                this.send('refresh');
+                this.send('refresh', true);
             }
         });
 
@@ -217,11 +222,7 @@ export class PHPBuiltInServer  {
     }
 
     private applyRouter(): void {
-        if (!Configurations.serverRoot.endsWith(".php")) {
-            // @ts-ignore
-            this.errors.push(`${PHPBuiltInServerErrorReason.CREATING_PHP_ROUTER} directory. The provided root file '${Configurations.serverRoot}' is not a php file`);
-            return;
-        }
+        if (Configurations.isHeadless) return;
 
         try {
             if (!existsSync(join(this.data.getProjectDir()!, ".vscode")))
@@ -269,16 +270,21 @@ export class PHPBuiltInServer  {
 
     private initPHPBuiltInServer() {
         if (this.errors.length !== 0) return;
-        this.terminal = window.createTerminal({
-            name: `${Consts.EXTN.DISPLAY_NAME} [:${this.data.getPorts().server}]`,
-            shellPath: this.data.getPHPExec()!,
-            shellArgs: ['-H', '-S', `localhost:${this.data.getPorts().server}`, '.vscode/phpbis-router.php'],
-            isTransient: false,
-        });
+
+        const opts : TerminalOptions = {
+            name: `${Consts.EXTN.DISPLAY_NAME} ${Configurations.isHeadless ? "" : `[:${this.data.getPorts().server}]`}`,
+            isTransient: Configurations.isHeadless,
+            shellArgs: this.getServerArgs(),
+            shellPath : Configurations.isHeadless ? undefined : this.data.getPHPExec()!
+        }
+
+        this.terminal = window.createTerminal(opts);
+        if (Configurations.isHeadless)
+            this.terminal.sendText(`${this.data.getPHPExec()} ${this.data.getPHPRoot()}`);
     }
 
     private initWebSocket() {
-        if (this.errors.length !== 0) return;
+        if (this.errors.length !== 0 || Configurations.isHeadless) return;
 
         const s = createServer((req, resp) => {
             const headers = {
@@ -301,7 +307,6 @@ export class PHPBuiltInServer  {
 
         s.on('close', async (reason: any) => {
             this.och.appendLine(`PHP Built In Server connection closed`);
-            this.emitter.emit('close');
             await this.dispose(false);
         })
 
@@ -311,9 +316,23 @@ export class PHPBuiltInServer  {
         });
     }
 
-    private send(msg: string) {
+    private getServerArgs(): string[] {
+        const args = ['-H'];
+        if (!Configurations.isHeadless) {
+            args.push('-S', `localhost:${this.data.getPorts().server}`, '.vscode/phpbis-router.php');
+        }
+
+        return args;
+    }
+
+    private send(msg: string, headless = false) {
         if (this.socketIsActive)
             this.io!.send(msg);
+        else if (Configurations.isHeadless && headless) {
+            if (Configurations.clearTerminalOnSave)
+                this.terminal?.sendText(Utils.getCommandForOS('cls', 'clear'));
+            this.terminal?.sendText(`${this.data.getPHPExec()} ${this.data.getPHPRoot()}`);
+        }
     }
 
 }

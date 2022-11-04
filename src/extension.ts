@@ -18,6 +18,7 @@ const configs = {
         port: Configurations.serverPort,
         root: Configurations.serverRoot
     },
+    globals: Configurations.globals,
     phpExec: Configurations.phpExec
 };
 

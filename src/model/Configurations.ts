@@ -16,11 +16,18 @@ export default class {
     }
 
     public static get isHeadless(): boolean {
-        return this.get('isHeadless', false);
+        return this.get('enabled', false, 'server.headless');
+    }
+
+    public static get clearTerminalOnSave(): boolean {
+        return this.get('clearTerminalOnSave', true, 'server.headless');
     }
 
     public static get globals(): { 'env-vars': { [key: string]: any }, 'consts': { [key: string]: any } } {
-        return this.get("globals", { 'env-vars': {}, 'consts': {} });
+        const result = this.get("globals", { 'env-vars': {}, 'consts': {} });
+        result['env-vars'] = result['env-vars'] || {};
+        result.consts = result.consts || {};
+        return result;
     }
 
     private static get(property: string, defaultValue: any = undefined, prefix: string | undefined = undefined) {
