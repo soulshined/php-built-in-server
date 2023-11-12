@@ -12,7 +12,7 @@
 */
 
 if (php_sapi_name() == "cli-server") {
-    $req = new class { public function __construct()
+    $req = new class extends \stdClass { public function __construct()
         {
             $this->query = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
             $this->path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
